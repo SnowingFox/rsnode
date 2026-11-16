@@ -10,7 +10,17 @@
 
   var DATA_URL = "data/benchmark.json";
 
+  /*
+   * The five cards are fixed by the page. The dataset must use these ids; the
+   * measurement file's own ids are mapped at conversion time rather than here,
+   * so the data file and data/README.md stay the single place that defines the
+   * vocabulary. A section with any other id is appended after these five.
+   */
   var ORDER = ["startup", "memory", "native-call", "http", "compatibility"];
+
+  /* Where the full report lives. The repository's default branch is `master`. */
+  var REPORT_URL =
+    "https://github.com/SnowingFox/rsnode/blob/master/docs/compat-status.md";
 
   var LABEL = {
     node: "Node.js",
@@ -35,6 +45,19 @@
 
   function isNum(v) {
     return typeof v === "number" && isFinite(v);
+  }
+
+  /*
+   * Prose from the dataset uses `backticks` around identifiers. Render those as
+   * <code> instead of shipping the punctuation to the reader, and leave every
+   * other character exactly as written.
+   */
+  function richText(target, text) {
+    String(text == null ? "" : text).split("`").forEach(function (part, i) {
+      if (!part) return;
+      target.appendChild(i % 2 ? el("code", "", part) : el("span", "", part));
+    });
+    return target;
   }
 
   /* A cell may be a number, null, or { value, status } — normalise all three. */
@@ -70,6 +93,12 @@
 
   function trim(s) {
     return s.replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
+  }
+
+  /* True when a runtime's value on this row is flagged as not comparable. */
+  function isFlagged(row, key) {
+    return Object.prototype.toString.call(row.notComparable) === "[object Array]" &&
+      row.notComparable.indexOf(key) !== -1;
   }
 
   function runtimeKeys(data) {
@@ -161,7 +190,11 @@
     var parts = [];
     var kind = "neutral";
 
-    var lead = rows.filter(function (r) { return r.headline; })[0] || rows[0];
+    var lead = rows.filter(function (r) {
+      return r.headline && !isFlagged(r, "rustnode") && !isFlagged(r, "node");
+    })[0] || rows.filter(function (r) {
+      return !isFlagged(r, "rustnode") && !isFlagged(r, "node");
+    })[0] || rows[0];
     var leadRs = cell(lead.rustnode);
     var leadNd = cell(lead.node);
     var leadName = lead.case != null ? "`" + lead.case + "`" : "the headline case";
@@ -204,7 +237,7 @@
       }
     }
 
-    if (worst) {
+    if (worst && rows.length > 1) {
       parts.push("Its widest gap in this section is " + fmt(worst.ratio) +
         "x of Node on `" + worst.row.case + "`.");
     } else if (bestGain && rows.length > 1) {
@@ -218,15 +251,49 @@
       var bn = cell(r.bun);
       var rs = cell(r.rustnode);
       if (bn.value == null) return;
+      // A flagged Bun figure is not like-for-like, so counting it as a Bun win
+      // or loss would restate the exact error its note exists to stop.
+      if (isFlagged(r, "bun")) return;
       bunCount++;
       if (rs.value == null) { bunBetter++; return; }
       var cmp = lower ? rs.value <= bn.value : rs.value >= bn.value;
       if (!cmp) bunBetter++;
     });
+    /*
+     * State what the Bun numbers did, in whichever direction they went. Bun is a
+     * different engine, but that is an explanation for its wins, never a licence
+     * to imply a win that did not happen.
+     */
     if (bunCount) {
-      parts.push("Bun was faster than rsnode on " + bunBetter + " of the " + bunCount +
-        " cases where it was measured, which is expected: Bun's runtime is a different " +
-        "engine, and this page does not claim otherwise.");
+      var plural = bunCount === 1 ? "case" : "cases";
+      if (bunBetter === 0) {
+        parts.push("Bun was not ahead of rsnode on " +
+          (bunCount === 1 ? "the one case" : "any of the " + bunCount + " cases") +
+          " where both were measured.");
+      } else if (bunBetter === bunCount) {
+        parts.push("Bun was ahead of rsnode on " +
+          (bunCount === 1 ? "the one case" : "all " + bunCount + " cases") +
+          " where both were measured: it runs a different engine, and this page " +
+          "does not claim otherwise.");
+      } else {
+        parts.push("Bun was ahead of rsnode on " + bunBetter + " of the " + bunCount +
+          " " + plural + " where both were measured. It runs a different engine, " +
+          "and this page does not claim otherwise.");
+      }
+    }
+
+    /*
+     * If a figure was left out of the Bun count because it is not like-for-like,
+     * say so in the verdict. Otherwise the reader sees a Bun tally that silently
+     * excludes a published number and cannot tell why.
+     */
+    var omittedBun = rows.filter(function (r) { return isFlagged(r, "bun"); });
+    if (omittedBun.length) {
+      var one = omittedBun.length === 1;
+      parts.push("Bun's " + (one ? "figure on " : "figures on ") +
+        omittedBun.map(function (r) { return "`" + r.case + "`"; }).join(", ") +
+        (one ? " is" : " are") + " left out of that count: it times Bun's help " +
+        "banner rather than the workload, as the note on that case says.");
     }
 
     return { kind: kind, text: parts.join(" ") };
@@ -237,12 +304,18 @@
     var parts = [];
 
     if (rs.value != null) {
-      parts.push("rsnode covers " + fmt(rs.value) + unit +
-        " of the surface measured here" +
-        (nd.value != null ? ", against " + fmt(nd.value) + unit + " for Node" : "") + ".");
+      parts.push("rsnode passes " + fmt(rs.value) + unit +
+        " of Node's own test files" +
+        (nd.value != null ? ", and Node passes " + fmt(nd.value) + unit +
+          " because these are Node's tests" : "") + ".");
     } else {
       parts.push("Coverage for rsnode has not been measured yet.");
       return { kind: "neutral", text: parts.join(" ") };
+    }
+
+    var bunRow = rows[0] || {};
+    if (cell(bunRow.bun).value == null) {
+      parts.push("Bun is shown as not measured, not as zero.");
     }
 
     parts.push("This card is deliberately not a speed number: it is a breadth " +
@@ -282,15 +355,46 @@
       group.setAttribute("role", "group");
       group.setAttribute("aria-label", r.case != null ? String(r.case) : "case");
 
+      /*
+       * Runtimes on this row whose printed value is not a like-for-like
+       * comparison. Their number stays visible — deleting a measurement hides
+       * it — but it is tagged, it never wins the row, and it is left out of the
+       * Bun tally downstream.
+       */
+      var flagged = {};
+      if (Object.prototype.toString.call(r.notComparable) === "[object Array]") {
+        r.notComparable.forEach(function (k) { flagged[k] = true; });
+      }
+      var anythingFlagged = Object.keys(flagged).length > 0;
+
       var labelRow = el("div", "case-label");
       labelRow.appendChild(el("span", "mono", r.case != null ? String(r.case) : "—"));
       var nVal = r.n;
       if (isNum(nVal)) labelRow.appendChild(el("span", "n", "n=" + nVal));
       group.appendChild(labelRow);
 
-      // best runtime for this row
+      /*
+       * A row note qualifies the numbers underneath it. It is rendered in the
+       * card, immediately under the case label and above the bars, and it is
+       * never hidden at narrow widths: a note that disappears on a phone would
+       * leave the misleading number on its own.
+       */
+      if (r.note) {
+        var note = el("p", "case-note" + (anythingFlagged ? " is-caveat" : ""));
+        if (anythingFlagged) {
+          note.appendChild(el("span", "case-note-tag", "not comparable"));
+          note.appendChild(document.createTextNode(" "));
+        }
+        note.appendChild(richText(el("span", ""), String(r.note)));
+        group.appendChild(note);
+      }
+
+      // Best runtime for this row, ignoring any runtime flagged above. Crowning
+      // a figure that is not like-for-like would be the exact false headline
+      // the note on this row exists to prevent.
       var rowBest = null;
       keys.forEach(function (k) {
+        if (flagged[k]) return;
         var c = cell(r[k]);
         if (c.value == null) return;
         if (!rowBest || (lower ? c.value < rowBest.value : c.value > rowBest.value)) {
@@ -330,6 +434,9 @@
           if (rowBest && rowBest.key === k) {
             value.appendChild(document.createTextNode(" "));
             value.appendChild(el("span", "best-tag", "best"));
+          } else if (flagged[k]) {
+            value.appendChild(document.createTextNode(" "));
+            value.appendChild(el("span", "flag-tag", "see note"));
           }
         }
         track.appendChild(value);
@@ -337,7 +444,8 @@
         row.setAttribute("aria-label",
           nameFor(data, k) + ": " +
           (c.value == null ? naText(c.status) : fmt(c.value) + (section.unit ? " " + section.unit : "")) +
-          (rowBest && rowBest.key === k ? ", best in this case" : ""));
+          (rowBest && rowBest.key === k ? ", best in this case" : "") +
+          (flagged[k] ? ", not comparable, see the note for this case" : ""));
         row.appendChild(track);
         group.appendChild(row);
       });
@@ -423,7 +531,7 @@
     var icon = verdict.kind === "win" ? "+" : verdict.kind === "loss" ? "!" : "·";
     v.appendChild(el("span", "verdict-icon", icon));
     var body = el("span", "verdict-body");
-    body.textContent = verdict.text;
+    richText(body, verdict.text);
     v.appendChild(body);
     card.appendChild(v);
 
@@ -437,7 +545,7 @@
 
     var foot = el("div", "card-foot");
     var a = el("a", "", "full report");
-    a.href = "https://github.com/SnowingFox/rsnode/blob/main/docs/compat-status.md";
+    a.href = REPORT_URL;
     a.rel = "noopener";
     foot.appendChild(a);
     card.appendChild(foot);
@@ -501,6 +609,13 @@
         wrap.appendChild(outer);
         bars.appendChild(wrap);
       });
+      // A compatibility row note carries provenance and caveats, so it is
+      // printed in the card like a chart row note rather than dropped.
+      if (r.note) {
+        var rn = el("p", "case-note");
+        rn.appendChild(richText(el("span", ""), String(r.note)));
+        bars.appendChild(rn);
+      }
     });
     right.appendChild(bars);
     body.appendChild(right);

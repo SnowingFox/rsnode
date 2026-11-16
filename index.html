@@ -134,11 +134,12 @@
         <article class="claim">
           <h3><span class="tag tag-no">not claimed</span> That startup is faster. It is currently slower.</h3>
           <p>
-            rsnode reaches roughly <strong>0.79x</strong> of Node on process startup —
-            that is a ratio below 1, so it means Node is quicker: about 23.8&nbsp;ms
-            against 18.9&nbsp;ms in the measured run. Pinned to a single core the gap
-            widens to about 0.65x, because Node spreads its bootstrap over several
-            threads and rsnode does not gain as much from that.
+            rsnode reaches roughly <strong>0.80x</strong> of Node on process startup —
+            that is a ratio below 1, so it means Node is quicker: about 21.8&nbsp;ms
+            against 17.5&nbsp;ms in the like-for-like empty-program case of the
+            measured run. An earlier single-core run put the gap near 0.65x, because
+            Node spreads its bootstrap over several threads and rsnode does not gain
+            as much from that.
           </p>
           <p class="claim-kicker">
             The startup work is not finished. The card above is the current number,
@@ -168,14 +169,17 @@
             The project's premise is "V8 unchanged", and across minor versions that is
             not currently true: rsnode links V8 15.2 while the Node 28 pin is 15.6.
             A pure-JavaScript null control — a loop that should measure identical on
-            both runtimes — comes back at <strong>1.06x</strong>, and the cause is the
-            engine difference, not the harness.
+            both runtimes — comes back at <strong>1.000x</strong> on the fast-path
+            medians, which is the result this project predicts and the one the control
+            card above reports.
           </p>
           <p class="claim-kicker">
-            So every JavaScript-bound ratio on this page carries a systematic bias of
-            roughly 6% <em>in rsnode's favour</em>. Where rsnode wins a JS-bound number,
-            discount it. Closing the gap means building V8 from source, not editing a
-            version string.
+            What differs is the shape of the distribution, not the throughput: in the
+            measured run Node's first optimised pass lost a tier-up race on 13 of 30
+            runs while rsnode lost it on none. That is a startup and warm-up effect,
+            not a per-operation speed difference, and the fast-path medians are what
+            should be compared. Closing the V8 gap still means building V8 from
+            source, not editing a version string.
           </p>
         </article>
       </div>

@@ -499,6 +499,23 @@ a:hover { color: #d3c2ff; }
   vertical-align: 0.1em;
 }
 
+/* Marks a printed value that its row's note says is not a like-for-like
+   comparison. Deliberately quieter than .best-tag: it qualifies, never ranks. */
+.flag-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  color: #e0cfa8;
+  background: #ffffff0a;
+  border: 1px solid #6b4a1e;
+  border-radius: 3px;
+  padding: 0 0.28rem;
+  margin-left: 0.4rem;
+  vertical-align: 0.1em;
+  white-space: nowrap;
+}
+
 .row-note {
   font-family: var(--mono);
   font-size: 0.7rem;
@@ -539,6 +556,38 @@ a:hover { color: #d3c2ff; }
 .case-label .n {
   font-size: 0.68rem;
   color: var(--fg-mute);
+}
+
+/* A row note qualifies the numbers in its case group. It sits under the case
+   label, above the bars, and stays visible at every width: a note that hides on
+   a phone would leave a misleading number on its own. */
+.case-note {
+  margin: 0 0 0.5rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--fg-mute);
+  overflow-wrap: anywhere;
+}
+.case-note.is-caveat {
+  border-left: 2px solid #6b4a1e;
+  background: #1a1409;
+  border-radius: 0 5px 5px 0;
+  padding: 0.45rem 0.6rem;
+  color: #e0cfa8;
+}
+.case-note-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #1a1409;
+  background: #e0cfa8;
+  border-radius: 3px;
+  padding: 0.04rem 0.3rem;
+  margin-right: 0.45rem;
+  vertical-align: 0.08em;
+  white-space: nowrap;
 }
 
 /* method footnote, printed in the card like bun does */
@@ -873,6 +922,10 @@ a:hover { color: #d3c2ff; }
   .card { padding: 0.95rem 0.8rem; }
   .row-value { font-size: 0.7rem; }
   .best-tag { display: none !important; }
+  /* The "see note" tag is the only pointer to a caveat on a wide row, so it
+     stays; it wraps under the value instead of being dropped. */
+  .flag-tag { margin-left: 0; display: inline-block; }
+  .row-value { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
 }
 
 @media (prefers-contrast: more) {
