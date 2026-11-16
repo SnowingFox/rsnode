@@ -51,7 +51,9 @@ jobs:
           toolchain: ${{ steps.toolchain.outputs.version }}
           components: rustfmt, clippy
 
-      - uses: Swatinem/rust-cache@v2
+      # Pinned like every other action here. The SHA is the one the herdr
+      # workflows used for this action on the v2 line.
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
 
       # Swatinem/rust-cache prunes `target/<profile>/` down to `build/`,
       # `.fingerprint/` and `deps/` for outside crates, deleting the 198 MB
