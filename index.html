@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>rsnode — a Node runtime with a native layer in Rust</title>
+<meta name="description" content="rsnode runs Node's own JavaScript on Node's own V8. Only the C++ native layer changes: it is rewritten in Rust. Measured benchmarks, stated with the losses included.">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0a0c'/%3E%3Cpath d='M8 23V9h3.4v5.1c.8-1.1 2-1.7 3.4-1.7 2.8 0 4.6 1.7 4.6 4.6V23h-3.4v-5.4c0-1.5-.7-2.4-2-2.4s-2.1.9-2.1 2.4V23H8zm12.9 0v-3.1h3.2V23h-3.2z' fill='%23b79cff'/%3E%3C/svg%3E">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="wordmark" href="#top">rsnode</a>
+    <nav class="topnav" aria-label="Sections">
+      <a href="#benchmarks">Benchmarks</a>
+      <a href="#claims">Limits</a>
+      <a href="#capabilities">Coverage</a>
+      <a href="#architecture">Architecture</a>
+    </nav>
+    <a class="topnav-cta" href="https://github.com/SnowingFox/rsnode" rel="noopener">GitHub</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- 1. Hero -->
+  <section class="hero" id="top">
+    <div class="wrap">
+      <p class="eyebrow">Node runtime · native layer in Rust</p>
+      <h1 class="hero-title">rsnode</h1>
+      <p class="hero-lede">
+        A drop-in shaped Node runtime where the JavaScript engine and every builtin
+        JavaScript file are the ones Node already ships, and only the native layer
+        underneath is new.
+      </p>
+      <p class="hero-honest">
+        Same engine. Same JavaScript. Native layer in Rust.
+      </p>
+      <p class="hero-caveat">
+        That sentence is the whole product, and also the whole limit: JavaScript
+        runs at Node's speed here, because it <em>is</em> Node's JavaScript on Node's engine.
+      </p>
+
+      <div class="install" role="group" aria-label="Build from source">
+        <div class="install-head">
+          <span class="install-label">build from source</span>
+          <button class="copy" type="button" data-copy-target="install-cmd">copy</button>
+        </div>
+        <pre class="code" id="install-cmd"><span class="prompt">$</span> git clone https://github.com/SnowingFox/rsnode
+<span class="prompt">$</span> cd rsnode &amp;&amp; rustup toolchain install 1.96.1
+<span class="prompt">$</span> cargo build --release
+<span class="prompt">$</span> ./target/release/rustnode -e 'console.log(process.versions.v8)'</pre>
+      </div>
+
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/SnowingFox/rsnode" rel="noopener">View on GitHub</a>
+        <a class="btn" href="https://github.com/SnowingFox/rsnode/tree/master/docs" rel="noopener">Read the docs</a>
+      </div>
+
+      <ul class="hero-facts">
+        <li><span class="k">engine</span> V8, reused, never patched</li>
+        <li><span class="k">builtin JS</span> Node's own files, hash-frozen</li>
+        <li><span class="k">native layer</span> Rust, replacing ~156k lines of C++</li>
+        <li><span class="k">binary</span> <code>rustnode</code> — the crate name; the project is rsnode</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 2. Benchmarks -->
+  <section class="band" id="benchmarks">
+    <div class="wrap">
+      <header class="band-head">
+        <h2>Measured, with the losses left in</h2>
+        <p class="band-sub">
+          Every card below says which way it went, in plain words, including the
+          cards rsnode loses. There is no overall score and no winner tally,
+          because a single number would be the one thing these measurements
+          cannot support.
+        </p>
+      </header>
+
+      <div class="legend" aria-hidden="false">
+        <span class="legend-label">runtime colours, used on every chart</span>
+        <span class="chip"><i class="sw sw-node"></i>Node.js <code class="muted">grey-blue</code></span>
+        <span class="chip"><i class="sw sw-rsnode"></i>rsnode <code class="muted">violet</code></span>
+        <span class="chip"><i class="sw sw-bun"></i>Bun <code class="muted">warm</code></span>
+      </div>
+
+      <div id="data-banner" class="banner" hidden></div>
+      <div id="bench-cards" class="cards" aria-live="polite">
+        <p class="loading">Loading measurements…</p>
+      </div>
+      <noscript>
+        <p class="notice">
+          The benchmark cards are rendered from <code>data/benchmark.json</code> at
+          load time, so they need JavaScript enabled. The full report is in the
+          repository; every number on this page comes from that file.
+        </p>
+      </noscript>
+    </div>
+  </section>
+
+  <!-- 3. What this does and does not claim -->
+  <section class="band band-claims" id="claims">
+    <div class="wrap">
+      <header class="band-head">
+        <h2>What this does and does not claim</h2>
+        <p class="band-sub">
+          A runtime page is a promise. These are the ones rsnode can keep, and the
+          ones it cannot.
+        </p>
+      </header>
+
+      <div class="claims">
+        <article class="claim">
+          <h3><span class="tag tag-claim">claim</span> JavaScript execution is unchanged</h3>
+          <p>
+            V8 is the same engine and all 435 builtin <code>lib/**</code> files plus the
+            three <code>deps/</code> files are byte-identical to Node 28, frozen by
+            <code>sha256</code>. A <code>for</code> loop, a <code>Map</code>, a regular
+            expression, garbage collection: the same compiled JavaScript, running on
+            the same engine.
+          </p>
+          <p class="claim-kicker">
+            If a workload is bound by JavaScript, rsnode's speed <em>is</em> Node's
+            speed. No gain, no loss, by construction.
+          </p>
+        </article>
+
+        <article class="claim">
+          <h3><span class="tag tag-no">not claimed</span> That startup is faster. It is currently slower.</h3>
+          <p>
+            rsnode reaches roughly <strong>0.79x</strong> of Node on process startup —
+            that is a ratio below 1, so it means Node is quicker: about 23.8&nbsp;ms
+            against 18.9&nbsp;ms in the measured run. Pinned to a single core the gap
+            widens to about 0.65x, because Node spreads its bootstrap over several
+            threads and rsnode does not gain as much from that.
+          </p>
+          <p class="claim-kicker">
+            The startup work is not finished. The card above is the current number,
+            not a target.
+          </p>
+        </article>
+
+        <article class="claim">
+          <h3><span class="tag tag-claim">claim</span> Some native paths were 10x slower, and that is fixed</h3>
+          <p>
+            Two native paths were genuinely broken, and both were found by running
+            Node's own benchmarks rather than by guessing. <code>Buffer#indexOf</code>
+            had no first-byte skip: 10.7x slower at the median and up to 191x on one
+            configuration. <code>TextEncoder#encodeInto</code> wrote through the V8 API
+            one byte at a time: 16.1x slower at the median.
+          </p>
+          <p class="claim-kicker">
+            Both are fixed and re-measured. Residuals remain and are stated with the
+            numbers: <code>encodeInto</code> on long strings is still far behind,
+            because Node calls simdutf where rsnode's write path is scalar.
+          </p>
+        </article>
+
+        <article class="claim">
+          <h3><span class="tag tag-no">not claimed</span> That V8 is the identical minor version</h3>
+          <p>
+            The project's premise is "V8 unchanged", and across minor versions that is
+            not currently true: rsnode links V8 15.2 while the Node 28 pin is 15.6.
+            A pure-JavaScript null control — a loop that should measure identical on
+            both runtimes — comes back at <strong>1.06x</strong>, and the cause is the
+            engine difference, not the harness.
+          </p>
+          <p class="claim-kicker">
+            So every JavaScript-bound ratio on this page carries a systematic bias of
+            roughly 6% <em>in rsnode's favour</em>. Where rsnode wins a JS-bound number,
+            discount it. Closing the gap means building V8 from source, not editing a
+            version string.
+          </p>
+        </article>
+      </div>
+
+      <div class="claims-note">
+        <p>
+          <strong>What is deliberately not claimed here:</strong> that any of this is
+          faster than Node on JavaScript, that rsnode competes with Bun on JS-bound
+          work, or that compatibility is finished. Compatibility is measured against
+          Node's own test suite and reported as a floor, not as parity.
+        </p>
+        <p class="link-out">
+          <a href="https://github.com/SnowingFox/rsnode/blob/master/docs/compat-status.md" rel="noopener">Full compatibility report</a>
+          <span class="sep">·</span>
+          <a href="https://github.com/SnowingFox/rsnode/blob/master/docs/startup.md" rel="noopener">Startup breakdown</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Capabilities -->
+  <section class="band" id="capabilities">
+    <div class="wrap">
+      <header class="band-head">
+        <h2>What is actually wired up</h2>
+        <p class="band-sub">
+          rsnode is a native layer, so its coverage is measured in
+          <code>internalBinding()</code> namespaces — the only door Node's JavaScript
+          has into native code. This is what exists today, stated at the level the
+          code supports rather than as a percentage.
+        </p>
+      </header>
+
+      <div class="grid">
+        <article class="tile">
+          <h3>Node's own JS, untouched</h3>
+          <p>435 <code>lib/**</code> files and 3 <code>deps/</code> files vendored byte-identical and hash-frozen. Editing one fails the build, so a native gap cannot turn into a JavaScript fork.</p>
+        </article>
+        <article class="tile">
+          <h3>Binding contracts</h3>
+          <p><code>contracts/</code> records the exact shape of each <code>internalBinding()</code> namespace from a real Node binary. <code>rn-compat</code> fails when a Rust namespace does not match, and a coverage ratchet stops a regression passing quietly.</p>
+        </article>
+        <article class="tile">
+          <h3>Modules</h3>
+          <p>CommonJS through Node's own 2297-line loader; ESM including top-level await and <code>"type": "module"</code>.</p>
+        </article>
+        <article class="tile">
+          <h3>I/O and processes</h3>
+          <p>TCP, UDP, <code>dns</code>, <code>net</code>, <code>http</code>, child processes, <code>MessagePort</code>, and <code>worker_threads</code> on a real second isolate.</p>
+        </article>
+        <article class="tile">
+          <h3>crypto</h3>
+          <p>Real OpenSSL 3.6.3: DH, key objects, ciphers, X.509, signing, <code>SecureContext</code>, and the <code>tls_wrap</code> namespace wired on top. TLS is the newest surface and the least covered.</p>
+        </article>
+        <article class="tile">
+          <h3>compression</h3>
+          <p><code>zlib</code> with zstd byte-identical to Node's, because it links the same C sources at the same version. <code>deflate</code>/<code>gzip</code> at levels 4–6 still compress worse than Node — a known, recorded divergence.</p>
+        </article>
+        <article class="tile">
+          <h3>node:sqlite</h3>
+          <p>A whole namespace, built on the same SQLite surface Node exposes.</p>
+        </article>
+        <article class="tile">
+          <h3>Node-API</h3>
+          <p>Prebuilt <code>.node</code> addons load through <code>rn-napi</code>, so third-party native modules are a target rather than an afterthought.</p>
+        </article>
+        <article class="tile">
+          <h3><code>--permission</code></h3>
+          <p>Genuinely enforces <code>fs</code> read/write, <code>child</code> and <code>env</code>. Does <em>not</em> yet enforce <code>net</code>, <code>worker</code>, <code>addon</code>, <code>wasi</code>, <code>inspector</code> or <code>ffi</code>, and the CLI says so instead of pretending.</p>
+        </article>
+        <article class="tile tile-wide">
+          <h3>The acceptance criterion is Node's test tree</h3>
+          <p>The harness runs Node's own <code>test/</code> files, one process per file, with a timeout — not a curated happy-path subset. Skips and <code>node:test</code> failures are scored as failures, and the denominator is corrected by running the same files under a real Node build. The pass rate is the compatibility card above.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Architecture -->
+  <section class="band band-arch" id="architecture">
+    <div class="wrap">
+      <header class="band-head">
+        <h2>One idea: move a layer, move nothing else</h2>
+        <p class="band-sub">
+          Bun replaces the engine, so it can be faster and has to reimplement Node's
+          behaviour. rsnode does the opposite: it keeps everything that defines
+          behaviour and replaces only the glue to the operating system.
+        </p>
+      </header>
+
+      <div class="arch">
+        <div class="arch-col">
+          <p class="arch-head">Node 28</p>
+          <div class="arch-box"><span class="arch-k">V8</span><span class="arch-v">the JavaScript engine</span></div>
+          <div class="arch-box"><span class="arch-k">lib/**</span><span class="arch-v">435 builtin JS files</span></div>
+          <div class="arch-box arch-box-changed"><span class="arch-k">src/**</span><span class="arch-v">~156k lines of C++</span></div>
+        </div>
+
+        <div class="arch-seam" aria-hidden="true">
+          <span class="seam-line"></span>
+          <span class="seam-label"><code>internalBinding()</code><br>the only seam</span>
+          <span class="seam-line"></span>
+        </div>
+
+        <div class="arch-col">
+          <p class="arch-head">rsnode</p>
+          <div class="arch-box arch-box-same"><span class="arch-k">V8</span><span class="arch-v">same engine, never patched</span></div>
+          <div class="arch-box arch-box-same"><span class="arch-k">lib/**</span><span class="arch-v">same files, byte-identical, hash-frozen</span></div>
+          <div class="arch-box arch-box-rust"><span class="arch-k">src/**</span><span class="arch-v">Rust, under <code>crates/</code></span></div>
+        </div>
+      </div>
+
+      <div class="arch-notes">
+        <p>
+          The two top layers are identical, which is why compatibility is structural
+          rather than a list of patched APIs: <strong>only the native layer can
+          differ</strong>, and every failure this project has hit traced back to a
+          native fact being missing or wrong — never to the JavaScript behaving
+          differently.
+        </p>
+        <p>
+          One piece of C is kept on purpose. HTTP parsing stays on Node's generated
+          <code>llhttp</code> state machine, compiled unchanged; only the V8 glue
+          around it is Rust. Two parsers disagreeing about where a request ends is
+          the request-smuggling vulnerability class, and that is not a place to
+          rewrite for style.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Closing CTA -->
+  <section class="band band-close" id="start">
+    <div class="wrap">
+      <h2>Run your own code on it</h2>
+      <p class="band-sub">
+        The honest way to evaluate this is to point it at something you already
+        care about. Node's test suite is the yardstick it is judged by, but your
+        program is the one that matters.
+      </p>
+      <div class="install install-close" role="group" aria-label="Run an existing program">
+        <div class="install-head">
+          <span class="install-label">build and run</span>
+          <button class="copy" type="button" data-copy-target="close-cmd">copy</button>
+        </div>
+        <pre class="code" id="close-cmd"><span class="prompt">$</span> cargo build --release
+<span class="prompt">$</span> ./target/release/rustnode ./your-program.js
+<span class="prompt">$</span> ./tools/run-node-tests.sh --tests /tmp/node/test --filter test-fs-</pre>
+      </div>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/SnowingFox/rsnode" rel="noopener">Get the source</a>
+        <a class="btn" href="https://github.com/SnowingFox/rsnode/blob/master/docs/compat-status.md" rel="noopener">Read what passes today</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-inner">
+    <p>
+      Every number on this page is read from <code>data/benchmark.json</code> at load
+      time. Nothing is rounded up, nothing is aggregated into a score, and rows that
+      were not measured say so.
+    </p>
+    <p class="foot-meta">
+      <a href="https://github.com/SnowingFox/rsnode" rel="noopener">SnowingFox/rsnode</a>
+      <span class="sep">·</span>
+      MIT
+      <span class="sep">·</span>
+      <span id="foot-generated">dataset: pending</span>
+    </p>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

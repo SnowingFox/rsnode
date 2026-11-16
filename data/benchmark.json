@@ -1,0 +1,13 @@
+{
+  "_comment": "PLACEHOLDER. No benchmark has been run into this file yet. It exists so the page can fetch it at runtime and show its empty state instead of a broken layout. Replace this whole file with the generated three-way dataset. Nothing here is a measurement.",
+  "status": "not-generated",
+  "generated": null,
+  "host": null,
+  "runtimes": {
+    "node": { "name": "Node.js", "version": null, "engine": null },
+    "rustnode": { "name": "rsnode", "version": null, "engine": null },
+    "bun": { "name": "Bun", "version": null, "engine": null }
+  },
+  "sections": [],
+  "calibration": null
+}
