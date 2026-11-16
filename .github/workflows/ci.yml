@@ -21,10 +21,16 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Verify vendored sources are unmodified
+        # All five trees `tools/check.sh` freezes, not the three that existed
+        # when this workflow was first written: `nghttp2` and `sqlite` are the
+        # compatibility surface of `node:http2` and `node:sqlite`, so a local
+        # edit to either changes behaviour away from the pinned Node revision.
         run: |
           ./tools/verify-libjs.sh
           ./tools/verify-llhttp.sh
           ./tools/verify-merve.sh
+          ./tools/verify-nghttp2.sh
+          ./tools/verify-sqlite.sh
 
       - name: Read the pinned toolchain
         id: toolchain

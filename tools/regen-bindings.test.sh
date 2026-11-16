@@ -205,7 +205,7 @@ cp "$regen" "$ratchet/tools/regen-bindings.sh"
 git -C "$repo" ls-files -z -- crates | tar -C "$repo" --null -T - -cf - | tar -xf - -C "$ratchet"
 
 if ( cd "$ratchet" && ./tools/regen-bindings.sh ) >"$ratchet/stdout" 2>"$ratchet/stderr"; then
-  if git -C "$repo" show "HEAD:rustnode/$install_all_rel" >"$ratchet/committed.rs" 2>/dev/null; then
+  if git -C "$repo" show "HEAD:$install_all_rel" >"$ratchet/committed.rs" 2>/dev/null; then
     if diff -u "$ratchet/committed.rs" "$ratchet/$install_all_rel" >"$ratchet/diff"; then
       ok "real tree still generates the committed install_all.rs byte for byte"
     else

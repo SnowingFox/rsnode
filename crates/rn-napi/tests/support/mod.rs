@@ -3,7 +3,7 @@
 //! Every test in this crate's addon suite needs a compiled `.node` file, and the
 //! one thing that must never happen is a test passing against a **stale** binary
 //! from an earlier build. That has masked a real regression twice in this project
-//! (see `rustnode/AGENTS.md` and `tools/check.sh`), so this helper:
+//! (see `AGENTS.md` and `tools/check.sh`), so this helper:
 //!
 //! * recompiles the addon unconditionally on every test run — no timestamp check,
 //!   no cache;

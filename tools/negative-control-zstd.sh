@@ -147,7 +147,7 @@ if [ "$arm" = "before" ]; then
   cp crates/rn-bind-zlib/Cargo.toml "$work/sources/Cargo.toml"
 
   for file in src/handle.rs src/lib.rs Cargo.toml; do
-    if ! git show "origin/master:rustnode/crates/rn-bind-zlib/$file" \
+    if ! git show "origin/master:crates/rn-bind-zlib/$file" \
       >"crates/rn-bind-zlib/$file"; then
       printf 'cannot read pre-change %s from origin/master\n' "$file" >&2
       exit 1

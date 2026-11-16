@@ -195,7 +195,7 @@ if [ "$arm" = "before" ]; then
   cp crates/rn-bind-messaging/src/*.rs "$work/sources/"
 
   for file in port.rs serialize.rs deserialize.rs lib.rs delivery.rs; do
-    if ! git show "$base_ref:rustnode/crates/rn-bind-messaging/src/$file" \
+    if ! git show "$base_ref:crates/rn-bind-messaging/src/$file" \
       >"crates/rn-bind-messaging/src/$file"; then
       printf 'cannot read %s at %s\n' "$file" "$base_ref" >&2
       exit 1

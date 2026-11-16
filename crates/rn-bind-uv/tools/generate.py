@@ -9,7 +9,6 @@ the platform error header it includes, and the messages come from the same
 
 Regenerate after bumping the Node pin in `tools/node-pin.toml`:
 
-    cd rustnode
     ./crates/rn-bind-uv/tools/generate.py --uv-cc /tmp/node/src/uv.cc
 
 `--uv-cc` is load-bearing, not a convenience. It compiles Node's own

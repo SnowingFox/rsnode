@@ -265,7 +265,7 @@ of each command is unchanged.
 node_tree=/tmp/node-pin                          # see "Reproducing any row" above
 oracle=/tmp/oracle-dl/node-v28.0.0-nightly20261111e8c1160d20-linux-x64/bin/node
 
-cd rustnode && export RUSTUP_TOOLCHAIN=1.96.1 CXX=g++ \
+export RUSTUP_TOOLCHAIN=1.96.1 CXX=g++ \
     RUSTFLAGS="-L /usr/lib/gcc/x86_64-linux-gnu/13"
 
 python3 crates/rn-napi/tools/build-node-api-addons.py \
@@ -757,7 +757,7 @@ substring over the recorded run.
 
 It is namespace absence, not a partial implementation: the same message names the
 binding on every file, so this is a whole `http2` rather than a tail patch. Note
-that `nghttp2` is **not** vendored under `rustnode/vendor/` (which holds
+that `nghttp2` is **not** vendored under `vendor/` (which holds
 `libnode-js`, `llhttp`, `merve` and `sqlite`) and no crate in the workspace depends
 on it, so building this means adding the implementation of the HTTP/2 protocol
 itself, not only a binding layer over an existing parser. Plan it as a subsystem.
@@ -980,7 +980,6 @@ recorded here so they are not reintroduced from memory.
 ## Reproducing any row
 
 ```bash
-cd rustnode
 export RUSTUP_TOOLCHAIN=1.96.1 CXX=g++ RUSTFLAGS="-L /usr/lib/gcc/x86_64-linux-gnu/13"
 
 # the pinned Node tree, as a full 40-character SHA (not a branch)

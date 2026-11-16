@@ -43,8 +43,8 @@
 set -uo pipefail
 
 self_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-workspace="$root/rustnode"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+workspace="$root"
 cd "$workspace"
 
 export RUSTUP_TOOLCHAIN="${RUSTUP_TOOLCHAIN:-1.96.1}"
@@ -67,18 +67,18 @@ build() {
   local target_dir="${3:-}"
 
   echo "== building $label at $tree ==" >&2
-  rm -f "$tree/rustnode/target/debug/rustnode" ${target_dir:+"$target_dir/debug/rustnode"}
+  rm -f "$tree/target/debug/rustnode" ${target_dir:+"$target_dir/debug/rustnode"}
   # A touch on the CLI entry point forces the final link even when Cargo wants to
   # restore a cached hardlink, which is the stale-binary trap this project has
   # hit: `cargo build` can reuse an artifact whose mtime predates the build.
-  touch "$tree/rustnode/crates/rn-cli/src/main.rs"
-  if ! ( cd "$tree/rustnode" && CARGO_TARGET_DIR="${target_dir:-$tree/rustnode/target}" \
+  touch "$tree/crates/rn-cli/src/main.rs"
+  if ! ( cd "$tree" && CARGO_TARGET_DIR="${target_dir:-$tree/target}" \
          cargo build -q -p rn-cli ); then
     echo "BUILD FAILED for $label; refusing to report a verdict." >&2
     return 3
   fi
 
-  local binary="${target_dir:-$tree/rustnode/target}/debug/rustnode"
+  local binary="${target_dir:-$tree/target}/debug/rustnode"
   if [ ! -x "$binary" ]; then
     echo "no binary at $binary after a build that reported success; refusing a verdict." >&2
     return 3
@@ -91,8 +91,8 @@ build() {
 run_probe() {
   local tree="$1"
   local target_dir="${2:-}"
-  local binary="${target_dir:-$tree/rustnode/target}/debug/rustnode"
-  ( cd "$tree/rustnode" && "$binary" --expose-internals tools/secure-context-probe.js 2>&1 )
+  local binary="${target_dir:-$tree/target}/debug/rustnode"
+  ( cd "$tree" && "$binary" --expose-internals tools/secure-context-probe.js 2>&1 )
 }
 
 # Applies the two edits that put the class on the namespace, and installs a trap
@@ -182,7 +182,7 @@ if [ "$mode" = "before" ]; then
   # The probe must exist in the master tree too, or the control would be
   # measuring a missing file rather than a missing class. It is copied in
   # because the probe is part of this change, not part of master.
-  cp "$workspace/tools/secure-context-probe.js" "$worktree/rustnode/tools/" 2>/dev/null || {
+  cp "$workspace/tools/secure-context-probe.js" "$worktree/tools/" 2>/dev/null || {
     echo "RESULT: NO VERDICT - could not install the probe into the master tree." >&2
     exit 3
   }

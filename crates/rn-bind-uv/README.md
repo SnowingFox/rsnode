@@ -33,7 +33,6 @@ Nothing is transcribed by hand. `tools/generate.py` reads
 the Node revision in `tools/node-pin.toml` — and writes `src/generated.rs`.
 
 ```bash
-cd rustnode
 ./crates/rn-bind-uv/tools/generate.py --uv-cc /tmp/node/src/uv.cc
 ./crates/rn-bind-uv/tools/generate.py --uv-cc /tmp/node/src/uv.cc --check
 ```

@@ -283,7 +283,6 @@ before the binding); this crate does not add a second check.
 ## Tests
 
 ```bash
-cd rustnode
 cargo test -p rn-bind-fs
 ```
 

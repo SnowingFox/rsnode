@@ -40,7 +40,7 @@ const DEPS_IDS: &[&str] = &[
 ];
 
 fn rustnode_root() -> PathBuf {
-    // CARGO_MANIFEST_DIR is rustnode/crates/rn-js2c. Walk up instead of assuming
+    // CARGO_MANIFEST_DIR is crates/rn-js2c. Walk up instead of assuming
     // a fixed depth, so the crate still finds the vendored tree if it is moved
     // within the workspace or checked out under a different nesting.
     let start = Path::new(env!("CARGO_MANIFEST_DIR"))

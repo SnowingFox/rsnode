@@ -41,11 +41,12 @@
 set -uo pipefail
 
 # `root` is the repository root; `workspace` is the cargo workspace inside it.
-# The script uses both, because a worktree of `origin/master` is a whole
-# checkout and its cargo workspace is in the same subdirectory.
+# In the standalone rsnode layout the workspace root *is* the repository root,
+# so a worktree of a base ref has its cargo workspace at the checkout path
+# itself rather than in a subdirectory.
 self_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-workspace="$root/rustnode"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+workspace="$root"
 cd "$workspace"
 
 export RUSTUP_TOOLCHAIN="${RUSTUP_TOOLCHAIN:-1.96.1}"
@@ -97,14 +98,14 @@ build() {
   # before anything is reported. Removing it is what makes existence afterwards
   # proof that this invocation produced it; an mtime comparison is too coarse
   # for a cached build that finishes inside one second.
-  rm -f "$tree/rustnode/target/debug/rustnode" ${target_dir:+"$target_dir/debug/rustnode"}
-  if ! ( cd "$tree/rustnode" && CARGO_TARGET_DIR="${target_dir:-$tree/rustnode/target}" \
+  rm -f "$tree/target/debug/rustnode" ${target_dir:+"$target_dir/debug/rustnode"}
+  if ! ( cd "$tree" && CARGO_TARGET_DIR="${target_dir:-$tree/target}" \
          cargo build -q -p rn-cli ); then
     echo "BUILD FAILED for $label; refusing to report a verdict." >&2
     return 3
   fi
 
-  local binary="${target_dir:-$tree/rustnode/target}/debug/rustnode"
+  local binary="${target_dir:-$tree/target}/debug/rustnode"
   if [ ! -x "$binary" ]; then
     echo "no binary at $binary after a build that reported success; refusing a verdict." >&2
     return 3
@@ -117,8 +118,8 @@ build() {
 run_control() {
   local tree="$1"
   local target_dir="${2:-}"
-  local binary="${target_dir:-$tree/rustnode/target}/debug/rustnode"
-  ( cd "$tree/rustnode" && "$binary" --expose-internals -e "$control" 2>&1 )
+  local binary="${target_dir:-$tree/target}/debug/rustnode"
+  ( cd "$tree" && "$binary" --expose-internals -e "$control" 2>&1 )
 }
 
 # Proves the void-run contract instead of asserting it in prose. A `compile_error!`

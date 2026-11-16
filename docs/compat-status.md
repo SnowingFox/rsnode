@@ -37,7 +37,6 @@ one of those files would turn a native-layer gap into a JavaScript fork, which
 is exactly the failure mode this project exists to avoid.
 
 ```bash
-cd rustnode
 ./tools/verify-libjs.sh
 ```
 
@@ -73,7 +72,6 @@ namespace, the member names a real Node binary exposes. `rn-compat` compares
 those against what the Rust registry installs.
 
 ```bash
-cd rustnode
 cargo run -p rn-compat                    # checks ./contracts
 cargo run -p rn-compat -- <contracts-dir>  # checks another directory
 ```
@@ -82,7 +80,6 @@ Recording a contract needs a real Node binary with an instrumented
 `internalBinding`:
 
 ```bash
-cd rustnode
 RUSTNODE_CONTRACT_OUT=/tmp/recorded.json \
   node --require ./tools/contract-gen/preload.cjs <script-that-loads-the-namespaces>
 cargo run -p contract-gen -- /tmp/recorded.json --out contracts
@@ -126,7 +123,6 @@ cd /tmp/node && git sparse-checkout set test
 ### Running it
 
 ```bash
-cd rustnode
 
 # default: the fixed 10-file smoke subset, then the per-subsystem table
 ./tools/run-node-tests.sh --tests /tmp/node/test
@@ -148,7 +144,6 @@ release, check out the commit in `tools/node-pin.toml` yourself and pass it as
 The harness itself is a small crate, so it can be driven directly:
 
 ```bash
-cd rustnode
 cargo run -p rn-harness -- run --tests /tmp/node/test --smoke
 cargo run -p rn-harness -- report
 cargo run -p rn-harness -- report --json
@@ -175,7 +170,6 @@ against the pinned tree with the four-marker rule, so a skip or a `node:test`
 failure would not be counted as a pass:
 
 ```bash
-cd rustnode
 python3 tools/test-tail-map.py run --node /tmp/frozen/rustnode \
     --tests /tmp/node-pin/test --out /tmp/smoke.json \
     --only parallel/test-assert.js --only parallel/test-buffer-bytelength.js \
@@ -242,7 +236,6 @@ A binding workstream owns one namespace, so it cares about the tests whose names
 carry that subsystem. Run the filtered subset and read the table:
 
 ```bash
-cd rustnode
 ./tools/run-node-tests.sh --tests /tmp/node/test --filter test-fs- --label fs
 ```
 

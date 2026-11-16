@@ -204,10 +204,9 @@ case "$arm" in
       exit 1
     fi
     trap 'git worktree remove --force "$work/before" >/dev/null 2>&1; restore' EXIT
-    # The repository root is the herdr checkout; rustnode is a workspace inside it,
-    # so the build has to run from the subdirectory or cargo sees the outer
-    # manifest and reports that `rn-cli` is not a package.
-    cd "$worktree/rustnode"
+    # The repository root is the cargo workspace root in the standalone layout,
+    # so the build runs from the checkout itself.
+    cd "$worktree"
     # The fixture addon in the `before` tree has no `addon_async.c`; the assertion
     # is the same file, which is the point: it fails there because the runtime
     # cannot load an addon importing these symbols.

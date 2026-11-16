@@ -162,7 +162,7 @@ recorded `-L` points at a directory that no longer exists, and any unit that
 has to build or relink fails with `could not find native static library
 rusty_v8` even though nothing about the source or the lints changed. The fix is
 to drop v8's fingerprints when the archive is missing so the build script reruns;
-CI does that in rustnode-ci.yml, and the same prune is what makes a local
+CI does that in .github/workflows/ci.yml, and the same prune is what makes a local
 `target/` copied between machines unsafe.
 
 ## Debugging a binding called with the wrong arguments

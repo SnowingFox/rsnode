@@ -56,7 +56,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# The binding recipe from rustnode/AGENTS.md. Without `CXX` the vendored C++ fails
+# The binding recipe from AGENTS.md. Without `CXX` the vendored C++ fails
 # to configure, and without the `-L` the linker cannot find libstdc++'s `.so`; both
 # have been misreported as a broken tree.
 export RUSTUP_TOOLCHAIN="${RUSTUP_TOOLCHAIN:-1.96.1}"
