@@ -639,37 +639,66 @@
     var note = el("div", "verdict is-neutral");
     note.appendChild(el("span", "verdict-icon", "·"));
     var b = el("span", "verdict-body");
-    b.textContent = "This workload should measure identical on any runtime that runs the same " +
-      "JavaScript on the same engine. If it does not, the difference is the engine, and it " +
-      "tells you how much to discount every other JavaScript-bound row on this page.";
+    var fast = cal.fastMedian || null;
+    var sameEngine = fast && isNum(fast.node) && isNum(fast.rustnode) &&
+      Math.abs(fast.node - fast.rustnode) < 0.005;
+    richText(b, "This workload should measure identical on any runtime that runs the same " +
+      "JavaScript on the same engine." +
+      (sameEngine
+        ? " It does: on the fast-path medians Node and rsnode both measure " +
+          fmt(fast.rustnode) + " ms, which is 1.000x. So the other JavaScript-bound " +
+          "rows here are not carrying an engine bias."
+        : " If it does not, the difference is the engine, and it tells you how much " +
+          "to discount every other JavaScript-bound row on this page."));
     note.appendChild(b);
     card.appendChild(note);
+
+    /*
+     * The plain medians are bimodal for Node — a cold process sometimes loses a
+     * tier-up race and takes ~13x longer — so the chart plots the fast-path
+     * median where the dataset carries one. Plotting the bimodal median instead
+     * would show rsnode "winning" the control, which is the opposite of its
+     * point.
+     */
+    var plotted = {};
+    ["node", "rustnode", "bun"].forEach(function (k) {
+      plotted[k] = fast && isNum(fast[k]) ? fast[k] : cell(cal[k]).value;
+    });
+    var max = 0;
+    ["node", "rustnode", "bun"].forEach(function (k) {
+      if (isNum(plotted[k]) && plotted[k] > max) max = plotted[k];
+    });
 
     var chart = el("div", "chart");
     ["node", "rustnode", "bun"].forEach(function (k) {
       var c = cell(cal[k]);
+      var v = plotted[k];
       var row = el("div", "row is-" + SLUG[k]);
       row.appendChild(el("span", "row-name", nameFor(data, k)));
       var track = el("div", "row-track");
       var outer = el("div", "bar-outer");
-      if (c.value == null) {
+      if (!isNum(v)) {
         outer.appendChild(el("div", "bar-na"));
       } else {
         var bar = el("div", "bar");
-        var max = Math.max(cell(cal.node).value || 0, cell(cal.rustnode).value || 0, cell(cal.bun).value || 0);
-        var pct = max > 0 ? (c.value / max) * 100 : 0;
-        if (c.value > 0 && pct < 1.5) pct = 1.5;
+        var pct = max > 0 ? (v / max) * 100 : 0;
+        if (v > 0 && pct < 1.5) pct = 1.5;
         bar.style.width = pct.toFixed(2) + "%";
         bar.setAttribute("aria-hidden", "true");
         outer.appendChild(bar);
       }
       track.appendChild(outer);
       var val = el("span", "row-value");
-      if (c.value == null) {
+      if (!isNum(v)) {
         val.classList.add("is-na");
         val.textContent = naText(c.status);
       } else {
-        val.textContent = fmt(c.value) + " ms";
+        val.textContent = fmt(v) + " ms";
+        if (fast && isNum(c.value) && Math.abs(c.value - v) > 0.005) {
+          val.appendChild(document.createTextNode(" "));
+          val.appendChild(el("span", "flag-tag",
+            "median " + fmt(c.value) + " ms"));
+        }
       }
       track.appendChild(val);
       row.appendChild(track);
@@ -679,7 +708,8 @@
 
     var m = el("p", "method");
     var segs = [
-      "20M integer adds in a loop · timed inside the process",
+      "20M integer adds in a loop · timed inside the process" +
+        (fast ? " · bars show the fast-path median" : ""),
       data.host && data.host.cpu ? data.host.cpu : "hardware not recorded",
       isNum(cal.n) ? "medians of " + cal.n : "sample size not recorded"
     ];

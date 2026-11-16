@@ -151,7 +151,16 @@ a series:
 card, not as a benchmark. It exists to show the reader how much to discount the
 JS-bound numbers when the control does not come back at 1.00x.
 
-In this dataset it comes back at **1.000x** between Node and rsnode on the
-fast-path medians, which is the expected result for a runtime that reuses V8
-unmodified. That 1.000x is the discount the other JavaScript-bound rows are
-entitled to; it is not an rsnode advantage.
+It may carry an optional `fastMedian: { node, rustnode, bun }`. When present the
+card plots those values instead of the plain `node`/`rustnode`/`bun` medians,
+because a bimodal distribution makes the plain median the wrong figure to
+compare; the plain median is still printed as a `median …` tag on each bar, and
+the method line says which one the bars show.
+
+In this dataset the control comes back at **1.000x** between Node and rsnode on
+the fast-path medians (6.35 ms each), which is the expected result for a runtime
+that reuses V8 unmodified, and the card states that directly. That 1.000x is the
+discount the other JavaScript-bound rows are entitled to; it is not an rsnode
+advantage. The plain medians differ (6.51 ms vs 6.35 ms) only because Node's
+first optimised pass lost a tier-up race on 13 of 30 runs; that is a warm-up
+effect, not a throughput difference.

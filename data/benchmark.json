@@ -299,7 +299,12 @@
       "rustnode": 6.35,
       "bun": 6.07,
       "n": 30,
-      "note": "20M integer adds, 10 warm-up passes before the timed pass. Should be 1.00x between Node and rustnode because rustnode reuses V8 unmodified: fast-path medians are identical (6.35 ms each, 1.00x). The plain medians differ because Node's first optimized pass loses a tier-up race in 13 of 30 runs (~83 ms), which rustnode never does (0 of 30). Bun runs the loop at 6.07 ms."
+      "note": "20M integer adds, 10 warm-up passes before the timed pass. Should be 1.00x between Node and rustnode because rustnode reuses V8 unmodified: fast-path medians are identical (6.35 ms each, 1.00x). The plain medians differ because Node's first optimized pass loses a tier-up race in 13 of 30 runs (~83 ms), which rustnode never does (0 of 30). Bun runs the loop at 6.07 ms.",
+      "fastMedian": {
+        "node": 6.35,
+        "rustnode": 6.35,
+        "bun": 6.07
+      }
     }
   }
 }
